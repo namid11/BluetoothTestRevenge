@@ -8,26 +8,14 @@ import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.os.IBinder
-import android.os.Parcel
 import android.os.ParcelUuid
 import android.util.Log
-import androidx.core.app.ActivityCompat
 import com.cyan_namid09.testbluetooth_revenge.databinding.ActivityMainBinding
 import java.util.*
 
 private const val TAG = "[MAIN ACTIVITY]"
 private const val REQUEST_ENABLE_BT = 1
 
-private const val STATE_DISCONNECTED = 0
-private const val STATE_CONNECTING = 1
-private const val STATE_CONNECTED = 2
-const val ACTION_GATT_CONNECTED = "com.example.bluetooth.le.ACTION_GATT_CONNECTED"
-const val ACTION_GATT_DISCONNECTED = "com.example.bluetooth.le.ACTION_GATT_DISCONNECTED"
-const val ACTION_GATT_SERVICES_DISCOVERED =
-    "com.example.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED"
-const val ACTION_DATA_AVAILABLE = "com.example.bluetooth.le.ACTION_DATA_AVAILABLE"
-const val EXTRA_DATA = "com.example.bluetooth.le.EXTRA_DATA"
 val UUID_SERVICE: UUID = UUID.fromString("4627f78e-7410-11ea-bc55-0242ac130003")
 val UUID_CHARACTERISTIC: UUID = UUID.fromString("b20a1840-676b-41ff-8947-7543108499d5")
 
@@ -42,8 +30,6 @@ class MainActivity : AppCompatActivity() {
     private val BluetoothAdapter.isDisabled: Boolean
         get() = !isEnabled
     private var bluetoothDevice: BluetoothDevice? = null
-    private var bluetoothGatt: BluetoothGatt? = null
-    private var connectionState = STATE_DISCONNECTED
     private var gattServer: BluetoothGattServer? = null
 
     private lateinit var binding: ActivityMainBinding
