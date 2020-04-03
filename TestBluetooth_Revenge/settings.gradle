@@ -1,0 +1,2 @@
+rootProject.name='TestBluetooth_Revenge'
+include ':app'
