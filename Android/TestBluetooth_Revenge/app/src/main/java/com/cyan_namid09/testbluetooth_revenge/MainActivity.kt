@@ -18,6 +18,7 @@ private const val REQUEST_ENABLE_BT = 1
 
 val UUID_SERVICE: UUID = UUID.fromString("4627f78e-7410-11ea-bc55-0242ac130003")
 val UUID_CHARACTERISTIC: UUID = UUID.fromString("b20a1840-676b-41ff-8947-7543108499d5")
+val UUID_NOTIFICATION: UUID = UUID.fromString("cd88aee8-74ed-11ea-bc55-0242ac130003")
 
 class MainActivity : AppCompatActivity() {
 
@@ -34,6 +35,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
+    var count = 0
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -44,16 +47,15 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
         }
 
-        gattServer = bluetoothManager.openGattServer(this, gattServerCallback)
+        gattServer = bluetoothManager.openGattServer(applicationContext, gattServerCallback)
         val service = BluetoothGattService(UUID_SERVICE, BluetoothGattService.SERVICE_TYPE_PRIMARY)
         val characteristic = BluetoothGattCharacteristic(
             UUID_CHARACTERISTIC,
-            BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_NOTIFY or BluetoothGattCharacteristic.PROPERTY_READ,
-            BluetoothGattCharacteristic.PERMISSION_WRITE or BluetoothGattCharacteristic.PERMISSION_READ
-        ).apply {
-            setValue("HELLO BLUETOOTH")
-        }
-        val descriptor = BluetoothGattDescriptor(UUID_CHARACTERISTIC, BluetoothGattDescriptor.PERMISSION_WRITE or BluetoothGattDescriptor.PERMISSION_READ)
+            BluetoothGattCharacteristic.PROPERTY_READ or BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+            BluetoothGattCharacteristic.PERMISSION_READ
+        )
+        val descriptor = BluetoothGattDescriptor(UUID_NOTIFICATION, BluetoothGattDescriptor.PERMISSION_WRITE or BluetoothGattDescriptor.PERMISSION_READ)
+//        descriptor.value = BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
         characteristic.addDescriptor(descriptor)
         service.addCharacteristic(characteristic)
         gattServer?.addService(service)
@@ -78,7 +80,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     override fun onStartSuccess(settingsInEffect: AdvertiseSettings?) {
-                        Log.d(TAG, "Start Success")
+                        Log.d(TAG, "Start Advertise")
                     }
                 }
             )
@@ -94,8 +96,8 @@ class MainActivity : AppCompatActivity() {
 
         binding.sendButton.setOnClickListener {
             if (gattServer != null && bluetoothDevice != null) {
-                characteristic.setValue("HELLO BLUETOOTH")
-                if (gattServer!!.notifyCharacteristicChanged(bluetoothDevice!!, characteristic, false))
+                characteristic.setValue("count: ${++count}")
+                if (gattServer!!.notifyCharacteristicChanged(bluetoothDevice!!, characteristic, true))
                     Log.d(TAG, "notification succeeded")
                 else
                     Log.e(TAG, "notification failed")
@@ -123,22 +125,24 @@ class MainActivity : AppCompatActivity() {
 
         override fun onCharacteristicReadRequest(device: BluetoothDevice?, requestId: Int, offset: Int, characteristic: BluetoothGattCharacteristic?) {
             Log.d(TAG, "Characteristic Read Request")
-            gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS , offset, characteristic?.value ?: "WWW".toByteArray())
+            count += 1
+            characteristic?.setValue(count.toString())
+            gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS , offset, characteristic?.value ?: "NONE".toByteArray())
         }
 
         override fun onDescriptorReadRequest(device: BluetoothDevice?, requestId: Int, offset: Int, descriptor: BluetoothGattDescriptor?) {
             Log.d(TAG, "Descriptor Read Request")
-            gattServer?.sendResponse(device, requestId, BluetoothProfile.STATE_CONNECTED, offset, null)
+            gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, "TEST".toByteArray())
         }
 
         override fun onCharacteristicWriteRequest(device: BluetoothDevice?, requestId: Int, characteristic: BluetoothGattCharacteristic?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
             Log.d(TAG, "Characteristic Write Request")
-            gattServer?.sendResponse(device, requestId, BluetoothProfile.STATE_CONNECTED, offset, value)
+            gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value)
         }
 
         override fun onDescriptorWriteRequest(device: BluetoothDevice?, requestId: Int, descriptor: BluetoothGattDescriptor?, preparedWrite: Boolean, responseNeeded: Boolean, offset: Int, value: ByteArray?) {
             Log.d(TAG, "Descriptor Write Request")
-            gattServer?.sendResponse(device, requestId, BluetoothProfile.STATE_CONNECTED, offset, value)
+            gattServer?.sendResponse(device, requestId, BluetoothGatt.GATT_SUCCESS, offset, value)
         }
 
         override fun onNotificationSent(device: BluetoothDevice?, status: Int) {
@@ -148,6 +152,17 @@ class MainActivity : AppCompatActivity() {
                 }
                 else -> {
                     Log.d(TAG, "sent operation failed")
+                }
+            }
+        }
+
+        override fun onServiceAdded(status: Int, service: BluetoothGattService?) {
+            when (status) {
+                BluetoothGatt.GATT_SUCCESS -> {
+                    Log.d(TAG, "succeeded to add service")
+                }
+                else -> {
+                    Log.e(TAG, "failed to add service")
                 }
             }
         }
