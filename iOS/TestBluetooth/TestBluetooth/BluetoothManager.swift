@@ -18,7 +18,7 @@ class BluetoothManager: NSObject, CBPeripheralManagerDelegate {
     
     let characteristic = CBMutableCharacteristic(
         type: characreristicParamUUID,
-        properties: CBCharacteristicProperties.notify.union(.read),
+        properties: CBCharacteristicProperties.notify.union(.read).union(.write),
         value: nil,
         permissions: CBAttributePermissions.readable.union(.writeable))
     let service = CBMutableService(type: serviceUUID, primary: true)
@@ -68,14 +68,23 @@ class BluetoothManager: NSObject, CBPeripheralManagerDelegate {
     }
     
     func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveRead request: CBATTRequest) {
-        request.value = characteristic.value
+        print("read request")
+        request.value = "HELLO BLUETOOTH".data(using: .utf8) ?? Data()
         peripheralManager?.respond(to: request, withResult: CBATTError.success)
+    }
+    
+    func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveWrite requests: [CBATTRequest]) {
+        print("write request")
+        for req in requests {
+            print("DATA:",String(data: req.value ?? Data(), encoding: .utf8) ?? "")
+            peripheralManager?.respond(to: req, withResult: CBATTError.success)
+        }
     }
     
     func advertisement() {
         let advertisementData = [
             CBAdvertisementDataServiceUUIDsKey: [service.uuid],
-            CBAdvertisementDataLocalNameKey: "My Device"] as [String : Any]
+            CBAdvertisementDataLocalNameKey: "MyIOS"] as [String : Any]
         peripheralManager?.startAdvertising(advertisementData)
     }
     
@@ -87,7 +96,7 @@ class BluetoothManager: NSObject, CBPeripheralManagerDelegate {
         let result = peripheralManager?.updateValue(
             updateValue,
             for: characteristic,
-            onSubscribedCentrals: [central!])
+            onSubscribedCentrals: nil)
         print("result:", result)
     }
     
