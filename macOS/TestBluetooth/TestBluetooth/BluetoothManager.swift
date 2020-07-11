@@ -19,7 +19,8 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     var targetDescriptor: CBDescriptor? = nil
     let serviceUUID = [CBUUID(string: "4627f78e-7410-11ea-bc55-0242ac130003")]
     let characreristicParamUUID = CBUUID(string: "b20a1840-676b-41ff-8947-7543108499d5")
-    let notificationUUID = CBUUID(string: "cd88aee8-74ed-11ea-bc55-0242ac130003")
+    let descriptorUUID = CBUUID(string: "cd88aee8-74ed-11ea-bc55-0242ac130003")
+    let cccdUUID = CBUUID(string: CBUUIDClientCharacteristicConfigurationString)
     
     override init () {
         super.init()
@@ -120,9 +121,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
 //                peripheral.setNotifyValue(true, for: characreristic)
 //            }
 //
-            if characreristic.uuid == notificationUUID {
-                self.targetPeripheral?.setNotifyValue(true, for: characreristic)
-            }
+//            if characreristic.uuid == notificationUUID {
+//                self.targetPeripheral?.setNotifyValue(true, for: characreristic)
+//            }
             
             if characreristic.uuid == characreristicParamUUID {
                 self.writeCharacteristic = characreristic
@@ -164,13 +165,14 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
     func peripheral(_ peripheral: CBPeripheral, didDiscoverDescriptorsFor characteristic: CBCharacteristic, error: Error?) {
         print("discover descriptor")
         for descriptor in characteristic.descriptors ?? [] {
-//            if descriptor.uuid == notificationUUID {
-//                self.targetDescriptor = descriptor
-//                self.targetPeripheral?.writeValue(
-//                    String(CBCharacteristicProperties.notify.rawValue).data(using: .utf8) ?? Data(),
-//                    for: descriptor)
-////                self.targetPeripheral?.setNotifyValue(true, for: characteristic)
-//            }
+            if descriptor.uuid == cccdUUID {
+                self.targetDescriptor = descriptor
+                print(descriptor.uuid.uuidString)
+                print(descriptor)
+                
+                print("find", descriptor.uuid)
+//                self.targetPeripheral?.setNotifyValue(true, for: characteristic)
+            }
         }
     }
     
@@ -196,7 +198,9 @@ class BluetoothManager: NSObject, CBCentralManagerDelegate, CBPeripheralDelegate
 
     
     func setNotify() {
+        print(writeCharacteristic)
         self.targetPeripheral?.setNotifyValue(true, for: writeCharacteristic!)
+        print(writeCharacteristic)
     }
     
     func write() {
